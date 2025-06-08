@@ -1,18 +1,14 @@
 {
-  "name": "todo-list-microservices",
+  "name": "todo-list-monolith-monorepo",
   "private": true,
   "workspaces": [
-    "frontend",
-    "api-gateway",
-    "users-service",
-    "todos-service"
+    "backend",
+    "frontend"
   ],
   "scripts": {
+    "dev:backend": "npm run dev --workspace=backend",
     "dev:frontend": "npm run dev --workspace=frontend",
-    "dev:api-gateway": "npm run dev --workspace=api-gateway",
-    "dev:users-service": "npm run dev --workspace=users-service",
-    "dev:todos-service": "npm run dev --workspace=todos-service",
-    "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:api-gateway\" \"npm run dev:users-service\" \"npm run dev:todos-service\""
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\""
   },
   "devDependencies": {
     "concurrently": "^8.2.2"

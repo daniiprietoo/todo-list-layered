@@ -1,14 +1,17 @@
 import express, { NextFunction, Request, Response } from "express";
 import cors from "cors";
 import { config } from "dotenv";
+import { asyncHandler } from "./utils/asyncHandler";
 import { errorHandler } from "./middleware/errorHandler";
 import { NotFoundError } from "./utils/errors";
 import { logger } from "./utils/logger";
 import { v4 as uuidv4 } from "uuid";
 import { rateLimit } from "express-rate-limit";
 import userRoutes from "./routes/userRoutes";
+import taskRoutes from "./routes/taskRoutes";
 import swaggerJsdoc from "swagger-jsdoc";
 import swaggerUi from "swagger-ui-express";
+import { sendResponse } from "./utils/response";
 
 // Extend Express Request to include id
 declare module "express-serve-static-core" {
@@ -49,9 +52,33 @@ const apiLimiter = rateLimit({
   },
 });
 
-app.use("/", apiLimiter as any);
+app.use("/api", apiLimiter as any);
 
-app.use("/", userRoutes);
+app.get("/", (req: Request, res: Response) => {
+  logger.info(`[${req.id}] Health check`);
+  sendResponse(res, {
+    success: true,
+    message: "✅ Server is running",
+    requestId: req.id,
+    status: 200,
+  });
+});
+
+app.get(
+  "/api/users/logout",
+  asyncHandler(async (req: Request, res: Response) => {
+    logger.info(`[${req.id}] User logged out`);
+    sendResponse(res, {
+      success: true,
+      message: "✅ User logged out",
+      requestId: req.id,
+      status: 200,
+    });
+  })
+);
+
+app.use("/api/users", userRoutes);
+app.use("/api/tasks", taskRoutes);
 
 const swaggerOptions = {
   definition: {
@@ -64,7 +91,7 @@ const swaggerOptions = {
     },
     servers: [
       {
-        url: "/",
+        url: "/api",
         description: "API server",
       },
     ],
@@ -73,22 +100,22 @@ const swaggerOptions = {
 };
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
 app.use(
-  "/docs",
+  "/api/docs",
   swaggerUi.serve as any,
   swaggerUi.setup(swaggerSpec) as any
 );
 
 // Catch-all 404 for /api/* routes
-app.all(/^\/.*/, (req: Request, res: Response, next: NextFunction) => {
+app.all(/^\/api\/.*/, (req: Request, res: Response, next: NextFunction) => {
   next(new NotFoundError("❌ Route not found"));
 });
 
 // Centralized error handler
-app.use(errorHandler as any);
+app.use(errorHandler);
 
 export default app;
 
-const PORT = process.env.PORT || 4001;
+const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
-  logger.info(`User Service Server listening on http://localhost:${PORT}`);
+  logger.info(`Server listening on http://localhost:${PORT}`);
 });
